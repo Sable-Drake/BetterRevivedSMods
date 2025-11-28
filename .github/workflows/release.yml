@@ -88,6 +88,15 @@ jobs:
         git add better_revived_smods.version mod_info.json
         git commit -m "Update version to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
         git push origin main || echo "Nothing to push"
+    
+    - name: Copy Java files to data/ for release
+      run: |
+        # Copy Java files from src/ to data/ so Starsector can compile them
+        mkdir -p data/hullmods
+        if [ -d "src/data/hullmods" ]; then
+          cp src/data/hullmods/*.java data/hullmods/ 2>/dev/null || true
+          echo "Copied Java files to data/hullmods/"
+        fi
         
     - name: Create mod zip file
       run: |
@@ -117,7 +126,15 @@ jobs:
           -x "${MOD_NAME}/bin/*" \
           -x "${MOD_NAME}/out/*" \
           -x "${MOD_NAME}/build/*" \
-          -x "${MOD_NAME}/dist/*"
+          -x "${MOD_NAME}/dist/*" \
+          -x "${MOD_NAME}/.gradle/*" \
+          -x "${MOD_NAME}/gradle/*" \
+          -x "${MOD_NAME}/gradlew" \
+          -x "${MOD_NAME}/gradlew.bat" \
+          -x "${MOD_NAME}/build.gradle.kts" \
+          -x "${MOD_NAME}/settings.gradle.kts" \
+          -x "${MOD_NAME}/src/**/*.java" \
+          -x "${MOD_NAME}/jars/*.old"
         
         mv "${ZIP_NAME}" "../${MOD_NAME}/"
         cd "../${MOD_NAME}"
@@ -132,4 +149,3 @@ jobs:
         files: BetterRevivedSMods-${{ steps.get_version.outputs.version }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

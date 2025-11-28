@@ -21,6 +21,10 @@ build/
 out/
 bin/
 target/
+.gradle/
+# JAR files are included in the repo for releases
+# jars/*.jar
+jars/*.old
 
 # Temporary files
 *.tmp
