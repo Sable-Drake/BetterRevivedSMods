@@ -1,0 +1,9 @@
+{
+    "id": "better_revived_smods",
+    "name": "Better Revived S-Mods",
+    "author": "SableDrake",
+    "utility": "false",
+    "version": "1.0.0",
+    "description": "Buff hullmods when they are smodded in to make them deserving of smodding! Updated to leverage the modern vanilla S-Mod system. Based on the amazing Better Deserved S-Mods by Jackie!",
+    "gameVersion": "0.98a-RC8"
+}
