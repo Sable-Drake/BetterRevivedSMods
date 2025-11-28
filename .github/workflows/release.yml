@@ -1,0 +1,135 @@
+name: Create Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: true
+      
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version extracted: $VERSION"
+        
+        MAJOR=$(echo $VERSION | cut -d. -f1)
+        MINOR=$(echo $VERSION | cut -d. -f2)
+        PATCH=$(echo $VERSION | cut -d. -f3)
+        echo "major=$MAJOR" >> $GITHUB_OUTPUT
+        echo "minor=$MINOR" >> $GITHUB_OUTPUT
+        echo "patch=$PATCH" >> $GITHUB_OUTPUT
+        
+    - name: Update mod_info.json with version
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        echo 'import json' > update_version.py
+        echo 'import os' >> update_version.py
+        echo 'version = os.environ["VERSION"]' >> update_version.py
+        echo 'with open("mod_info.json", "r") as f:' >> update_version.py
+        echo '    data = json.load(f)' >> update_version.py
+        echo 'data["version"] = version' >> update_version.py
+        echo 'with open("mod_info.json", "w") as f:' >> update_version.py
+        echo '    json.dump(data, f, indent=4)' >> update_version.py
+        echo 'print("Updated mod_info.json version to: " + version)' >> update_version.py
+        python3 update_version.py
+        cat mod_info.json
+        
+    - name: Update better_revived_smods.version file
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+        MAJOR: ${{ steps.get_version.outputs.major }}
+        MINOR: ${{ steps.get_version.outputs.minor }}
+        PATCH: ${{ steps.get_version.outputs.patch }}
+      run: |
+        echo 'import json' > update_version_file.py
+        echo 'import os' >> update_version_file.py
+        echo 'version = os.environ["VERSION"]' >> update_version_file.py
+        echo 'major = int(os.environ["MAJOR"])' >> update_version_file.py
+        echo 'minor = int(os.environ["MINOR"])' >> update_version_file.py
+        echo 'patch = os.environ["PATCH"]' >> update_version_file.py
+        echo 'download_url = "https://github.com/Sable-Drake/BetterRevivedSMods/releases/download/" + version + "/BetterRevivedSMods-" + version + ".zip"' >> update_version_file.py
+        echo 'try:' >> update_version_file.py
+        echo '    patch_int = int(patch)' >> update_version_file.py
+        echo 'except ValueError:' >> update_version_file.py
+        echo '    patch_int = patch' >> update_version_file.py
+        echo 'with open("better_revived_smods.version", "r") as f:' >> update_version_file.py
+        echo '    data = json.load(f)' >> update_version_file.py
+        echo 'data["modVersion"] = {' >> update_version_file.py
+        echo '    "major": major,' >> update_version_file.py
+        echo '    "minor": minor,' >> update_version_file.py
+        echo '    "patch": patch_int' >> update_version_file.py
+        echo '}' >> update_version_file.py
+        echo 'data["directDownloadURL"] = download_url' >> update_version_file.py
+        echo 'with open("better_revived_smods.version", "w") as f:' >> update_version_file.py
+        echo '    json.dump(data, f, indent="\t")' >> update_version_file.py
+        echo 'print("Updated better_revived_smods.version:")' >> update_version_file.py
+        echo 'print("  Version: " + str(major) + "." + str(minor) + "." + str(patch))' >> update_version_file.py
+        echo 'print("  Download URL: " + download_url)' >> update_version_file.py
+        python3 update_version_file.py
+        cat better_revived_smods.version
+        
+    - name: Commit and push version file update
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add better_revived_smods.version mod_info.json
+        git commit -m "Update version to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
+        git push origin main || echo "Nothing to push"
+        
+    - name: Create mod zip file
+      run: |
+        MOD_NAME="BetterRevivedSMods"
+        ZIP_NAME="${MOD_NAME}-${{ steps.get_version.outputs.version }}.zip"
+        
+        mkdir -p ../temp_release
+        cp -r . ../temp_release/${MOD_NAME}
+        cd ../temp_release
+        
+        zip -r "${ZIP_NAME}" "${MOD_NAME}" \
+          -x "${MOD_NAME}/.git/*" \
+          -x "${MOD_NAME}/.github/*" \
+          -x "${MOD_NAME}/*.DS_Store" \
+          -x "${MOD_NAME}/*.iml" \
+          -x "${MOD_NAME}/*.iws" \
+          -x "${MOD_NAME}/*.ipr" \
+          -x "${MOD_NAME}/.idea/*" \
+          -x "${MOD_NAME}/.vscode/*" \
+          -x "${MOD_NAME}/*.swp" \
+          -x "${MOD_NAME}/*.swo" \
+          -x "${MOD_NAME}/*~" \
+          -x "${MOD_NAME}/Thumbs.db" \
+          -x "${MOD_NAME}/desktop.ini" \
+          -x "${MOD_NAME}/*.log" \
+          -x "${MOD_NAME}/*.tmp" \
+          -x "${MOD_NAME}/bin/*" \
+          -x "${MOD_NAME}/out/*" \
+          -x "${MOD_NAME}/build/*" \
+          -x "${MOD_NAME}/dist/*"
+        
+        mv "${ZIP_NAME}" "../${MOD_NAME}/"
+        cd "../${MOD_NAME}"
+        echo "Created: $ZIP_NAME"
+        ls -lh "$ZIP_NAME"
+        echo "Zip contents (first 20 files):"
+        unzip -l "$ZIP_NAME" | head -20
+        
+    - name: Upload release asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: BetterRevivedSMods-${{ steps.get_version.outputs.version }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
