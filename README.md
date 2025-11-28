@@ -1,5 +1,8 @@
 # Better Revived S-Mods
 
+[![Version](https://img.shields.io/github/v/release/Sable-Drake/BetterRevivedSMods?style=for-the-badge&label=VERSION)](https://github.com/Sable-Drake/BetterRevivedSMods/releases/latest)
+[![Download](https://img.shields.io/badge/Download-Better%20Revived%20S--Mods-blue?style=for-the-badge)](https://github.com/Sable-Drake/BetterRevivedSMods/releases/latest)
+
 This mod enhances hullmods when they are S-Modded (built in with Story Points), making them more deserving of the investment. Updated to leverage the modern vanilla S-Mod system.
 
 ## S-Mod Bonuses by Hullmod
